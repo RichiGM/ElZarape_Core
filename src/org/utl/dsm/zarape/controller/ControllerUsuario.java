@@ -84,8 +84,7 @@ public class ControllerUsuario {
     public void insert(Usuario usuario, Persona persona, String tipoEntidad, Integer idSucursal) {
         String query = "{CALL SP_InsertUsuario(?, ?, ?, ?, ?, ?, ?, ?)}";
         ConexionMySql conexionMySql = new ConexionMySql();
-        try (Connection conn = conexionMySql.open();
-             CallableStatement cs = conn.prepareCall(query)) {
+        try ( Connection conn = conexionMySql.open();  CallableStatement cs = conn.prepareCall(query)) {
 
             cs.setString(1, usuario.getNombre());
             cs.setString(2, usuario.getContrasenia());
@@ -108,56 +107,49 @@ public class ControllerUsuario {
         }
     }
 
-public void update(Usuario usuario, Persona persona, String tipoEntidad, Integer idSucursal) {
-    System.out.println("Datos recibidos en el controlador:");
-    System.out.println("Usuario: " + usuario);
-    System.out.println("Persona: " + persona);
-    System.out.println("Tipo Entidad: " + tipoEntidad);
-    System.out.println("ID Sucursal: " + idSucursal);
+    public void update(Usuario usuario, Persona persona, String tipoEntidad, Integer idSucursal) {
+        System.out.println("Datos recibidos en el controlador:");
+        System.out.println("Usuario: " + usuario);
+        System.out.println("Persona: " + persona);
+        System.out.println("Tipo Entidad: " + tipoEntidad);
+        System.out.println("ID Sucursal: " + idSucursal);
 
-    String query = "{CALL SP_UpdateUsuario(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}";
-    ConexionMySql conexionMySql = new ConexionMySql();
+        String query = "{CALL SP_UpdateUsuario(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}";
+        ConexionMySql conexionMySql = new ConexionMySql();
 
-    try (Connection conn = conexionMySql.open();
-         CallableStatement stmt = conn.prepareCall(query)) {
+        try ( Connection conn = conexionMySql.open();  CallableStatement stmt = conn.prepareCall(query)) {
 
-        stmt.setInt(1, usuario.getIdUsuario());
-        stmt.setString(2, usuario.getNombre());
-        stmt.setString(3, usuario.getContrasenia());
-        stmt.setInt(4, persona.getIdPersona());
-        stmt.setString(5, persona.getNombre());
-        stmt.setString(6, persona.getApellidos());
-        stmt.setString(7, persona.getTelefono());
-        stmt.setInt(8, persona.getIdCiudad());
-        stmt.setString(9, tipoEntidad);
+            stmt.setInt(1, usuario.getIdUsuario());
+            stmt.setString(2, usuario.getNombre());
+            stmt.setString(3, usuario.getContrasenia());
+            stmt.setInt(4, persona.getIdPersona());
+            stmt.setString(5, persona.getNombre());
+            stmt.setString(6, persona.getApellidos());
+            stmt.setString(7, persona.getTelefono());
+            stmt.setInt(8, persona.getIdCiudad());
+            stmt.setString(9, tipoEntidad);
 
-        if (idSucursal != null) {
-            stmt.setInt(10, idSucursal);
-        } else {
-            stmt.setNull(10, Types.INTEGER);
+            if (idSucursal != null) {
+                stmt.setInt(10, idSucursal);
+            } else {
+                stmt.setNull(10, Types.INTEGER);
+            }
+
+            System.out.println("Ejecutando el SP con los datos configurados...");
+            stmt.executeUpdate();
+            System.out.println("SP ejecutado correctamente.");
+        } catch (SQLException ex) {
+            System.out.println("Error en el SP:");
+            ex.printStackTrace();
+            throw new RuntimeException("Error al modificar el usuario: " + ex.getMessage(), ex);
         }
-
-        System.out.println("Ejecutando el SP con los datos configurados...");
-        stmt.executeUpdate();
-        System.out.println("SP ejecutado correctamente.");
-    } catch (SQLException ex) {
-        System.out.println("Error en el SP:");
-        ex.printStackTrace();
-        throw new RuntimeException("Error al modificar el usuario: " + ex.getMessage(), ex);
     }
-}
-
-
-
-
-
 
     // Cambiar estatus de un usuario
     public void cambiarEstatus(int idUsuario) {
         String query = "{CALL SP_DeleteUsuario(?)}";
         ConexionMySql conexionMySql = new ConexionMySql();
-        try (Connection conn = conexionMySql.open();
-             CallableStatement cs = conn.prepareCall(query)) {
+        try ( Connection conn = conexionMySql.open();  CallableStatement cs = conn.prepareCall(query)) {
 
             cs.setInt(1, idUsuario);
 
@@ -168,4 +160,95 @@ public void update(Usuario usuario, Persona persona, String tipoEntidad, Integer
             throw new RuntimeException("Error al cambiar el estatus del usuario: " + e.getMessage(), e);
         }
     }
+
+    public boolean validateUser(String username, String password) {
+        String query = "SELECT COUNT(*) FROM usuario WHERE nombre = ? AND contrasenia = ? AND activo = 1";
+        ConexionMySql conexionMySql = new ConexionMySql();
+
+        try ( Connection conn = conexionMySql.open();  PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, username);
+            ps.setString(2, password);
+
+            try ( ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0; // Si el resultado es mayor a 0, el usuario existe
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error al validar el usuario: " + e.getMessage());
+        }
+
+        return false;
+
+    }
+
+    public List<Object> searchUsuarios(String nombreUsuario) {
+        List<Object> usuarios = new ArrayList<>();
+        String query = "{CALL SP_SearchUsuarios(?)}";
+
+        ConexionMySql conexionMySql = new ConexionMySql();
+        Connection conn = null;
+
+        try {
+            conn = conexionMySql.open();
+            CallableStatement cs = conn.prepareCall(query);
+            cs.setString(1, nombreUsuario);
+            ResultSet rs = cs.executeQuery();
+
+            while (rs.next()) {
+                // Reutiliza el código del método `getAllUsuarios` para mapear los resultados
+                int idUsuario = rs.getInt("idUsuario");
+                String nombreUsuarioResult = rs.getString("nombreUsuario");
+                String contrasenia = rs.getString("contrasenia");
+                int usuarioActivo = rs.getInt("usuarioActivo");
+
+                Usuario usuario = new Usuario(idUsuario, nombreUsuarioResult, contrasenia, usuarioActivo);
+
+                int idPersona = rs.getInt("idPersona");
+                String nombrePersona = rs.getString("nombrePersona");
+                String apellidos = rs.getString("apellidos");
+                String telefono = rs.getString("telefono");
+                int idCiudad = rs.getInt("idCiudad");
+                String nombreCiudad = rs.getString("ciudad");
+
+                Persona persona = new Persona(idPersona, nombrePersona, apellidos, telefono, idCiudad, nombreCiudad);
+
+                String tipoEntidad = rs.getString("tipoEntidad");
+
+                if ("empleado".equalsIgnoreCase(tipoEntidad)) {
+                    int idEmpleado = rs.getInt("idEmpleado");
+                    int idSucursal = rs.getInt("idSucursal");
+                    String nombreSucursal = rs.getString("nombreSucursal");
+
+                    Empleado empleado = new Empleado(idEmpleado, usuario, persona, idSucursal, nombreSucursal);
+                    usuarios.add(empleado);
+
+                } else if ("cliente".equalsIgnoreCase(tipoEntidad)) {
+                    int idCliente = rs.getInt("idCliente");
+
+                    Cliente cliente = new Cliente(idCliente, usuario, persona);
+                    usuarios.add(cliente);
+                }
+            }
+
+            rs.close();
+            cs.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error al buscar los usuarios: " + e.getMessage(), e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return usuarios;
+    }
+
 }
