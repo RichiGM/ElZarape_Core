@@ -1,4 +1,5 @@
 package org.utl.dsm.zarape.controller;
+
 import org.utl.dsm.zarape.model.Alimento;
 import org.utl.dsm.zarape.bd.ConexionMySql;
 import java.sql.*;
@@ -8,12 +9,13 @@ import org.utl.dsm.zarape.model.Categoria;
 import org.utl.dsm.zarape.model.Producto;
 
 public class ControllerAlimento {
+
     // Método para insertar un alimento
     public void insert(Alimento alimento) {
         String query = "{CALL SP_InsertProducto(?, ?, ?, ?, ?, ?)}";
         ConexionMySql conexionMySql = new ConexionMySql();
 
-        try (Connection conn = conexionMySql.open(); CallableStatement cs = conn.prepareCall(query)) {
+        try ( Connection conn = conexionMySql.open();  CallableStatement cs = conn.prepareCall(query)) {
             // Asignar parámetros del procedimiento
             cs.setString(1, alimento.getProducto().getNombre());
             cs.setString(2, alimento.getProducto().getDescripcion());
@@ -90,7 +92,7 @@ public class ControllerAlimento {
         String query = "{CALL SP_UpdateProducto(?, ?, ?, ?, ?, ?)}";
         ConexionMySql conexionMySql = new ConexionMySql();
 
-        try (Connection conn = conexionMySql.open(); CallableStatement cs = conn.prepareCall(query)) {
+        try ( Connection conn = conexionMySql.open();  CallableStatement cs = conn.prepareCall(query)) {
             // Asignar parámetros al procedimiento almacenado
             cs.setInt(1, producto.getIdProducto());
             cs.setString(2, producto.getNombre());
@@ -110,21 +112,20 @@ public class ControllerAlimento {
     }
 
     // Método para eliminar un producto (cambiar a inactivo)
-    public void deleteProducto(int Producto) {
-        String query = "{CALL SP_DeleteProducto(?)}";
+    public void deleteProducto(int idProducto) {
+        String query = "{CALL SP_DeleteProducto(?)}"; // Llama al procedimiento almacenado
         ConexionMySql conexionMySql = new ConexionMySql();
 
-        try (Connection conn = conexionMySql.open(); CallableStatement cs = conn.prepareCall(query)) {
+        try ( Connection conn = conexionMySql.open();  CallableStatement cs = conn.prepareCall(query)) {
             // Asignar el parámetro al procedimiento almacenado
-            /*cs.setInt(1, idAlimento); //MEDITAR ERROR */
+            cs.setInt(1, idProducto);
 
             // Ejecutar el procedimiento
             cs.execute();
-            System.out.println("El producto fue marcado como inactivo exitosamente.");
-
+            System.out.println("El producto fue marcado como inactivo/activo exitosamente.");
         } catch (SQLException e) {
             e.printStackTrace();
-            throw new RuntimeException("Error al eliminar (marcar como inactivo) el producto: " + e.getMessage(), e);
+            throw new RuntimeException("Error al cambiar el estatus del producto: " + e.getMessage(), e);
         }
     }
 
@@ -134,7 +135,7 @@ public class ControllerAlimento {
         List<Alimento> alimentos = new ArrayList<>();
         ConexionMySql conexionMySql = new ConexionMySql();
 
-        try (Connection conn = conexionMySql.open(); CallableStatement cs = conn.prepareCall(query)) {
+        try ( Connection conn = conexionMySql.open();  CallableStatement cs = conn.prepareCall(query)) {
             // Asignar parámetros con null-safe
             cs.setString(1, nombreProducto != null && !nombreProducto.isEmpty() ? nombreProducto : null);
             cs.setObject(2, precio, java.sql.Types.DECIMAL);
