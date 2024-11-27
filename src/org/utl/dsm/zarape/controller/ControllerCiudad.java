@@ -42,6 +42,37 @@ public class ControllerCiudad {
     }
     return ciudades;
 }
+        
+         public List<Ciudad> getAllCiudadesConEstados() {
+    List<Ciudad> ciudades = new ArrayList<>();
+    String query = """
+            SELECT c.idCiudad, c.nombre AS ciudadNombre, e.idEstado, e.nombre AS estadoNombre
+            FROM ciudad c
+            INNER JOIN estado e ON c.idEstado = e.idEstado
+        """;
+
+    try (Connection conn = new ConexionMySql().open();
+         PreparedStatement ps = conn.prepareStatement(query);
+         ResultSet rs = ps.executeQuery()) {
+
+        while (rs.next()) {
+            Ciudad ciudad = new Ciudad();
+            ciudad.setIdCiudad(rs.getInt("idCiudad"));
+            ciudad.setNombre(rs.getString("ciudadNombre")); // Alias correcto
+            ciudad.setIdEstado(rs.getInt("idEstado"));
+            ciudad.setNombreEstado(rs.getString("estadoNombre")); // Alias correcto
+
+            ciudades.add(ciudad);
+        }
+    } catch (SQLException e) {
+        System.err.println("Error en getAllCiudadesConEstados:");
+        e.printStackTrace(); // Logs para identificar el error exacto
+        throw new RuntimeException("Error al obtener las ciudades con estados: " + e.getMessage(), e);
+    }
+
+    return ciudades;
+}
+
 
     
 

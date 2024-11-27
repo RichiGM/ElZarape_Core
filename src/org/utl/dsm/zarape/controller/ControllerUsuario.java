@@ -11,74 +11,81 @@ public class ControllerUsuario {
 
     // Obtener todos los usuarios
     public List<Object> getAllUsuarios() {
-        List<Object> usuarios = new ArrayList<>();
-        String query = "SELECT * FROM vw_UsuarioInfo";
+    List<Object> usuarios = new ArrayList<>();
+    String query = "SELECT * FROM vw_UsuarioInfo";
 
-        ConexionMySql conexionMySql = new ConexionMySql();
-        Connection conn = null;
+    ConexionMySql conexionMySql = new ConexionMySql();
+    Connection conn = null;
 
-        try {
-            conn = conexionMySql.open();
-            PreparedStatement ps = conn.prepareStatement(query);
-            ResultSet rs = ps.executeQuery();
+    try {
+        conn = conexionMySql.open();
+        System.out.println("Conexión establecida con éxito.");
+        
+        PreparedStatement ps = conn.prepareStatement(query);
+        ResultSet rs = ps.executeQuery();
+        System.out.println("Consulta ejecutada correctamente.");
 
-            while (rs.next()) {
-                // Mapeo de Usuario
-                int idUsuario = rs.getInt("idUsuario");
-                String nombreUsuario = rs.getString("nombreUsuario");
-                String contrasenia = rs.getString("contrasenia");
-                int usuarioActivo = rs.getInt("usuarioActivo");
+        while (rs.next()) {
+            System.out.println("Procesando registro...");
+            // Mapeo de Usuario
+            int idUsuario = rs.getInt("idUsuario");
+            String nombreUsuario = rs.getString("nombreUsuario");
+            String contrasenia = rs.getString("contrasenia");
+            int usuarioActivo = rs.getInt("usuarioActivo");
 
-                Usuario usuario = new Usuario(idUsuario, nombreUsuario, contrasenia, usuarioActivo);
+            Usuario usuario = new Usuario(idUsuario, nombreUsuario, contrasenia, usuarioActivo);
 
-                // Mapeo de Persona
-                int idPersona = rs.getInt("idPersona");
-                String nombrePersona = rs.getString("nombrePersona");
-                String apellidos = rs.getString("apellidos");
-                String telefono = rs.getString("telefono");
-                int idCiudad = rs.getInt("idCiudad");
-                String nombreCiudad = rs.getString("ciudad");
+            // Mapeo de Persona
+            int idPersona = rs.getInt("idPersona");
+            String nombrePersona = rs.getString("nombrePersona");
+            String apellidos = rs.getString("apellidos");
+            String telefono = rs.getString("telefono");
+            int idCiudad = rs.getInt("idCiudad");
+            String nombreCiudad = rs.getString("ciudad");
 
-                Persona persona = new Persona(idPersona, nombrePersona, apellidos, telefono, idCiudad, nombreCiudad);
+            Persona persona = new Persona(idPersona, nombrePersona, apellidos, telefono, idCiudad, nombreCiudad);
 
-                // Determinar tipo de entidad
-                String tipoEntidad = rs.getString("tipoEntidad");
+            // Determinar tipo de entidad
+            String tipoEntidad = rs.getString("tipoEntidad");
 
-                if ("empleado".equalsIgnoreCase(tipoEntidad)) {
-                    // Mapeo de Empleado
-                    int idEmpleado = rs.getInt("idEmpleado");
-                    int idSucursal = rs.getInt("idSucursal");
-                    String nombreSucursal = rs.getString("nombreSucursal");
+            if ("empleado".equalsIgnoreCase(tipoEntidad)) {
+                // Mapeo de Empleado
+                int idEmpleado = rs.getInt("idEmpleado");
+                int idSucursal = rs.getInt("idSucursal");
+                String nombreSucursal = rs.getString("nombreSucursal");
 
-                    Empleado empleado = new Empleado(idEmpleado, usuario, persona, idSucursal, nombreSucursal);
-                    usuarios.add(empleado);
+                Empleado empleado = new Empleado(idEmpleado, usuario, persona, idSucursal, nombreSucursal);
+                usuarios.add(empleado);
 
-                } else if ("cliente".equalsIgnoreCase(tipoEntidad)) {
-                    // Mapeo de Cliente
-                    int idCliente = rs.getInt("idCliente");
+            } else if ("cliente".equalsIgnoreCase(tipoEntidad)) {
+                // Mapeo de Cliente
+                int idCliente = rs.getInt("idCliente");
 
-                    Cliente cliente = new Cliente(idCliente, usuario, persona);
-                    usuarios.add(cliente);
-                }
-            }
-
-            rs.close();
-            ps.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error al obtener los usuarios: " + e.getMessage(), e);
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+                Cliente cliente = new Cliente(idCliente, usuario, persona);
+                usuarios.add(cliente);
             }
         }
 
-        return usuarios;
+        rs.close();
+        ps.close();
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error durante la ejecución de la consulta: " + e.getMessage());
+        throw new RuntimeException("Error al obtener los usuarios: " + e.getMessage(), e);
+    } finally {
+        if (conn != null) {
+            try {
+                conn.close();
+                System.out.println("Conexión cerrada correctamente.");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
+
+    return usuarios;
+}
+
 
     // Insertar un usuario
     public void insert(Usuario usuario, Persona persona, String tipoEntidad, Integer idSucursal) {
