@@ -15,8 +15,8 @@ public class ConexionMySql {
     
     public Connection open(){
         String user = "root";
-        String password ="richigod2109";
-        String url = "jdbc:mysql://127.0.0.1:3306/zarape";
+        String password ="ThXjMhxtlIPUliiGeEoZxxACWAmPTRRf";
+        String url = "jdbc:mysql://root:ThXjMhxtlIPUliiGeEoZxxACWAmPTRRf@autorack.proxy.rlwy.net:44961/zarape";
         String parametros = "?useSSL=false&useUnicode=true&characterEncoding=utf-8";
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
