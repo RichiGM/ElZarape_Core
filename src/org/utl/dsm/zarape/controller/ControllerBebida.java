@@ -121,52 +121,50 @@ public class ControllerBebida {
     }
 
     // Método para buscar bebidas
-    public List<Bebida> buscarBebidas(String nombreProducto, Double precio, Integer idCategoria) {
-        String query = "{CALL SP_BuscarBebidas(?, ?, ?)}";
-        List<Bebida> bebidas = new ArrayList<>();
+public List<Bebida> searchBebidas(String filtro) {
+    String query = "{CALL SP_SearchBebidas(?)}"; // Solo un parámetro de filtro
+    List<Bebida> bebidas = new ArrayList<>();
 
-        try (Connection conn = new ConexionMySql().open();
-             CallableStatement cs = conn.prepareCall(query)) {
+    try (Connection conn = new ConexionMySql().open();
+         CallableStatement cs = conn.prepareCall(query)) {
 
-            // Validación de parámetros nulos
-            cs.setString(1, nombreProducto != null && !nombreProducto.isEmpty() ? nombreProducto : null);
-            cs.setObject(2, precio, java.sql.Types.DECIMAL);
-            cs.setObject(3, idCategoria, java.sql.Types.INTEGER);
+        // Establecer el filtro
+       cs.setString(1, filtro != null && !filtro.isEmpty() ? filtro : "");
 
-            // Ejecutar y procesar resultados
-            try (ResultSet rs = cs.executeQuery()) {
-                while (rs.next()) {
-                    // Mapeo de la categoría
-                    Categoria categoria = new Categoria(
-                            rs.getInt("idCategoria"),
-                            rs.getString("categoriaDescripcion"),
-                            rs.getString("categoriaTipo"),
-                            1
-                    );
+        // Ejecutar y procesar resultados
+        try (ResultSet rs = cs.executeQuery()) {
+            while (rs.next()) {
+                // Mapeo de la categoría
+                Categoria categoria = new Categoria(
+                        rs.getInt("idCategoria"),
+                        rs.getString("categoriaDescripcion"),
+                        rs.getString("categoriaTipo"),
+                        1 // Activo, puedes ajustar según tu lógica
+                );
 
-                    // Mapeo del producto
-                    Producto producto = new Producto(
-                            rs.getInt("idProducto"),
-                            rs.getString("nombreProducto"),
-                            rs.getString("descripcionProducto"),
-                            rs.getString("fotoProducto"),
-                            rs.getDouble("precioProducto"),
-                            categoria,
-                            rs.getInt("productoActivo")
-                    );
+                // Mapeo del producto
+                Producto producto = new Producto(
+                        rs.getInt("idProducto"),
+                        rs.getString("nombreProducto"),
+                        rs.getString("descripcionProducto"),
+                        rs.getString("fotoProducto"),
+                        rs.getDouble("precioProducto"),
+                        categoria,
+                        rs.getInt("productoActivo")
+                );
 
-                    // Mapeo de la bebida
-                    Bebida bebida = new Bebida(rs.getInt("idBebida"), producto);
-                    bebidas.add(bebida);
-                }
+                // Mapeo de la bebida
+                Bebida bebida = new Bebida(rs.getInt("idBebida"), producto);
+                bebidas.add(bebida);
             }
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al buscar bebidas: " + e.getMessage(), e);
         }
 
-        return bebidas;
+    } catch (SQLException e) {
+        throw new RuntimeException("Error al buscar bebidas: " + e.getMessage(), e);
     }
+
+    return bebidas;
+}
     
     // Cambiar estatus de una bebida
 public void cambiarEstatus(int idProducto) {
