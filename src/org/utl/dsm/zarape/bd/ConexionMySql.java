@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package org.utl.dsm.zarape.bd;
 
 
@@ -15,7 +11,7 @@ public class ConexionMySql {
     
     public Connection open(){
         String user = "root";
-         String password ="richigod2109";
+         String password ="cOpernico07$";
         String url = "jdbc:mysql://127.0.0.1:3306/zarape";
         String parametros = "?useSSL=false&useUnicode=true&characterEncoding=utf-8";
         try {
