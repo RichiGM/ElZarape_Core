@@ -114,43 +114,70 @@ public class ControllerUsuario {
         }
     }
 
-    public void update(Usuario usuario, Persona persona, String tipoEntidad, Integer idSucursal) {
-        System.out.println("Datos recibidos en el controlador:");
-        System.out.println("Usuario: " + usuario);
-        System.out.println("Persona: " + persona);
-        System.out.println("Tipo Entidad: " + tipoEntidad);
-        System.out.println("ID Sucursal: " + idSucursal);
+    // Modificar usuario (sin modificar contraseña)
+public void updateSinContrasenia(Usuario usuario, Persona persona, String tipoEntidad, Integer idSucursal) {
+    System.out.println("Datos recibidos en el controlador (Sin Contraseña):");
+    System.out.println("Usuario: " + usuario);
+    System.out.println("Persona: " + persona);
+    System.out.println("Tipo Entidad: " + tipoEntidad);
+    System.out.println("ID Sucursal: " + idSucursal);
 
-        String query = "{CALL SP_UpdateUsuario(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}";
-        ConexionMySql conexionMySql = new ConexionMySql();
+    String query = "{CALL SP_UpdateUsuarioSinContrasenia(?, ?, ?, ?, ?, ?, ?, ?, ?)}";
+    ConexionMySql conexionMySql = new ConexionMySql();
 
-        try ( Connection conn = conexionMySql.open();  CallableStatement stmt = conn.prepareCall(query)) {
+    try (Connection conn = conexionMySql.open();
+         CallableStatement stmt = conn.prepareCall(query)) {
 
-            stmt.setInt(1, usuario.getIdUsuario());
-            stmt.setString(2, usuario.getNombre());
-            stmt.setString(3, usuario.getContrasenia());
-            stmt.setInt(4, persona.getIdPersona());
-            stmt.setString(5, persona.getNombre());
-            stmt.setString(6, persona.getApellidos());
-            stmt.setString(7, persona.getTelefono());
-            stmt.setInt(8, persona.getIdCiudad());
-            stmt.setString(9, tipoEntidad);
+        stmt.setInt(1, usuario.getIdUsuario());
+        stmt.setString(2, usuario.getNombre());
+        stmt.setInt(3, persona.getIdPersona());
+        stmt.setString(4, persona.getNombre());
+        stmt.setString(5, persona.getApellidos());
+        stmt.setString(6, persona.getTelefono());
+        stmt.setInt(7, persona.getIdCiudad());
+        stmt.setString(8, tipoEntidad);
 
-            if (idSucursal != null) {
-                stmt.setInt(10, idSucursal);
-            } else {
-                stmt.setNull(10, Types.INTEGER);
-            }
-
-            System.out.println("Ejecutando el SP con los datos configurados...");
-            stmt.executeUpdate();
-            System.out.println("SP ejecutado correctamente.");
-        } catch (SQLException ex) {
-            System.out.println("Error en el SP:");
-            ex.printStackTrace();
-            throw new RuntimeException("Error al modificar el usuario: " + ex.getMessage(), ex);
+        if (idSucursal != null) {
+            stmt.setInt(9, idSucursal);
+        } else {
+            stmt.setNull(9, Types.INTEGER);
         }
+
+        System.out.println("Ejecutando el SP sin modificar contraseña...");
+        stmt.executeUpdate();
+        System.out.println("SP ejecutado correctamente.");
+    } catch (SQLException ex) {
+        System.out.println("Error en el SP (Sin Contraseña):");
+        ex.printStackTrace();
+        throw new RuntimeException("Error al modificar el usuario sin contraseña: " + ex.getMessage(), ex);
     }
+}
+
+// Modificar solo la contraseña del usuario
+public void updateContrasenia(int idUsuario, String nuevaContrasenia) {
+    System.out.println("Datos recibidos en el controlador (Solo Contraseña):");
+    System.out.println("ID Usuario: " + idUsuario);
+    System.out.println("Nueva Contraseña (Hash): " + nuevaContrasenia);
+
+    String query = "{CALL SP_UpdateContrasenia(?, ?)}";
+    ConexionMySql conexionMySql = new ConexionMySql();
+
+    try (Connection conn = conexionMySql.open();
+         CallableStatement stmt = conn.prepareCall(query)) {
+
+        stmt.setInt(1, idUsuario);
+        stmt.setString(2, nuevaContrasenia);
+
+        System.out.println("Ejecutando el SP para modificar solo la contraseña...");
+        stmt.executeUpdate();
+        System.out.println("SP ejecutado correctamente.");
+    } catch (SQLException ex) {
+        System.out.println("Error en el SP (Solo Contraseña):");
+        ex.printStackTrace();
+        throw new RuntimeException("Error al modificar la contraseña: " + ex.getMessage(), ex);
+    }
+}
+
 
     // Cambiar estatus de un usuario
     public void cambiarEstatus(int idUsuario) {
