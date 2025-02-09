@@ -15,7 +15,7 @@ public class ConexionMySql {
     
     public Connection open(){
         String user = "root";
-         String password ="richigod2109";
+         String password ="root";
         String url = "jdbc:mysql://127.0.0.1:3306/zarape";
         String parametros = "?useSSL=false&useUnicode=true&characterEncoding=utf-8";
         try {
