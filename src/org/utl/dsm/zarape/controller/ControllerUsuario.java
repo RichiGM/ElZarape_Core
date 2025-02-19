@@ -4,8 +4,11 @@ import org.utl.dsm.zarape.bd.ConexionMySql;
 import org.utl.dsm.zarape.model.*;
 
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Date;
+import org.apache.commons.codec.digest.DigestUtils;
 
 public class ControllerUsuario {
 
@@ -284,5 +287,80 @@ public void updateContrasenia(int idUsuario, String nuevaContrasenia) {
 
         return usuarios;
     }
+    
+   public String checkUsers(String nombreU) throws Exception {
+    // Consulta SQL
+    String sql = "SELECT * FROM usuario WHERE nombre = '" + nombreU + "';";
+    System.out.println("Ejecutando consulta SQL: " + sql); // Log 1: Ver la consulta ejecutada
+    
+
+    ConexionMySql connMySQL = new ConexionMySql();
+    Connection conn = connMySQL.open();
+    PreparedStatement pstmt = conn.prepareStatement(sql);
+    ResultSet rs = pstmt.executeQuery();
+
+    String name = null;
+    String tok = null; // Token almacenado en la BD
+    String tokenizer = null; // Token generado
+    Date myDate = new Date(); // Fecha actual
+    String fecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(myDate);
+    String sql2 = "";
+
+    while (rs.next()) {                  
+        name = rs.getString("nombre");
+        tok = rs.getString("lastToken"); // Obtener el lastToken desde la BD
+
+        // Log 2: Mostrar valores obtenidos
+        System.out.println("Nombre usuario obtenido: " + name);
+        System.out.println("Token obtenido de BD: " + tok);
+
+        // Verificar si el token no es null antes de hacer trim()
+        if (tok != null) {
+            tok = tok.trim();
+        } else {
+            tok = "";  // Evitar NullPointerException
+        }
+
+        if (!tok.isEmpty()) { // Si ya tiene un hash, solo actualiza la fecha
+            tokenizer = tok;
+            sql2 = "UPDATE usuario SET dateLastToken = '" + fecha + "' WHERE nombre = '" + name + "';";
+            System.out.println("Token ya existe, solo actualizando fecha.");
+        } else { // Si no tiene token, generarlo
+            String token = "ZARAPE" + "." + name + "." + fecha;
+            tokenizer = DigestUtils.md5Hex(token); // Generar token MD5
+            sql2 = "UPDATE usuario SET lastToken= '" + tokenizer + "', dateLastToken = '" + fecha + "' WHERE nombre = '" + name + "';";
+            System.out.println("Generando nuevo token: " + tokenizer);
+        } 
+
+        // Log 3: Verificar la consulta de actualización
+        System.out.println("Ejecutando SQL de actualización: " + sql2);
+
+        // Ejecutar la actualización
+        Connection connect = connMySQL.open();                    
+        PreparedStatement ps = connect.prepareStatement(sql2);                     
+        ps.executeUpdate(); 
+
+        // Log 4: Retorno del token
+        System.out.println("Token retornado: " + tokenizer);
+        return tokenizer;
+    } 
+
+    System.out.println("No se encontró el usuario: " + nombreU);
+    return name;
+}
+   
+   public void logoutUser (String nombreUsuario) {
+    String query = "UPDATE usuario SET lastToken = NULL WHERE nombre = ?";
+    ConexionMySql conexionMySql = new ConexionMySql();
+    
+    try (Connection conn = conexionMySql.open(); PreparedStatement ps = conn.prepareStatement(query)) {
+        ps.setString(1, nombreUsuario);
+        ps.executeUpdate();
+    } catch (SQLException e) {
+        e.printStackTrace();
+        throw new RuntimeException("Error al hacer logout del usuario: " + e.getMessage(), e);
+    }
+}
 
 }
+
