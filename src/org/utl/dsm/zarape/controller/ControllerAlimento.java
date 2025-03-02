@@ -131,47 +131,98 @@ public class ControllerAlimento {
 
     // Método simplificado para buscar alimentos
     public List<Alimento> searchAlimentos(String filtro) {
-    String query = "{CALL SP_SearchAlimentos(?)}"; // Solo un parámetro de filtro
-    List<Alimento> alimentos = new ArrayList<>();
+        String query = "{CALL SP_SearchAlimentos(?)}"; // Solo un parámetro de filtro
+        List<Alimento> alimentos = new ArrayList<>();
 
-    try (Connection conn = new ConexionMySql().open();
-         CallableStatement cs = conn.prepareCall(query)) {
+        try ( Connection conn = new ConexionMySql().open();  CallableStatement cs = conn.prepareCall(query)) {
 
-        // Establecer el filtro
-       cs.setString(1, filtro != null && !filtro.isEmpty() ? filtro : "");
+            // Establecer el filtro
+            cs.setString(1, filtro != null && !filtro.isEmpty() ? filtro : "");
 
-        // Ejecutar y procesar resultados
-        try (ResultSet rs = cs.executeQuery()) {
+            // Ejecutar y procesar resultados
+            try ( ResultSet rs = cs.executeQuery()) {
+                while (rs.next()) {
+                    // Mapeo de la categoría
+                    Categoria categoria = new Categoria(
+                            rs.getInt("idCategoria"),
+                            rs.getString("categoriaDescripcion"),
+                            rs.getString("categoriaTipo"),
+                            1 // Activo, puedes ajustar según tu lógica
+                    );
+
+                    // Mapeo del producto
+                    Producto producto = new Producto(
+                            rs.getInt("idProducto"),
+                            rs.getString("nombreProducto"),
+                            rs.getString("descripcionProducto"),
+                            rs.getString("fotoProducto"),
+                            rs.getDouble("precioProducto"),
+                            categoria,
+                            rs.getInt("productoActivo")
+                    );
+
+                    // Mapeo del alimento
+                    Alimento alimento = new Alimento(rs.getInt("idAlimento"), producto);
+                    alimentos.add(alimento);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error al buscar bebidas: " + e.getMessage(), e);
+        }
+
+        return alimentos;
+    }
+
+    public List<Alimento> getAllAlimentosCliente() {
+        List<Alimento> alimentos = new ArrayList<>();
+        String query = "SELECT * FROM vw_AlimentosInfo WHERE productoActivo = 1;";
+
+        ConexionMySql conexionMySql = new ConexionMySql();
+        Connection conn = null;
+
+        try {
+            conn = conexionMySql.open();
+            PreparedStatement ps = conn.prepareStatement(query);
+            ResultSet rs = ps.executeQuery();
+
             while (rs.next()) {
-                // Mapeo de la categoría
-                Categoria categoria = new Categoria(
-                        rs.getInt("idCategoria"),
-                        rs.getString("categoriaDescripcion"),
-                        rs.getString("categoriaTipo"),
-                        1 // Activo, puedes ajustar según tu lógica
-                );
+                // Mapeo de Producto
+                int idProducto = rs.getInt("idProducto");
+                String nombreProducto = rs.getString("nombreProducto");
+                String descripcionProducto = rs.getString("descripcionProducto");
+                String fotoProducto = rs.getString("fotoProducto");
+                double precioProducto = rs.getDouble("precioProducto");
+                int idCategoria = rs.getInt("idCategoria");
+                String categoriaDescripcion = rs.getString("categoriaDescripcion");
+                String categoriaTipo = rs.getString("categoriaTipo");
+                int productoActivo = rs.getInt("productoActivo");
 
-                // Mapeo del producto
-                Producto producto = new Producto(
-                        rs.getInt("idProducto"),
-                        rs.getString("nombreProducto"),
-                        rs.getString("descripcionProducto"),
-                        rs.getString("fotoProducto"),
-                        rs.getDouble("precioProducto"),
-                        categoria,
-                        rs.getInt("productoActivo")
-                );
+                Categoria categoria = new Categoria(idCategoria, categoriaDescripcion, categoriaTipo, 1);
+                Producto producto = new Producto(idProducto, nombreProducto, descripcionProducto, fotoProducto, precioProducto, categoria, productoActivo);
 
-                // Mapeo del alimento
-                Alimento alimento = new Alimento(rs.getInt("idAlimento"), producto);
+                // Mapeo de Alimento
+                int idAlimento = rs.getInt("idAlimento");
+                Alimento alimento = new Alimento(idAlimento, producto);
+
                 alimentos.add(alimento);
+            }
+
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error al obtener los alimentos: " + e.getMessage(), e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
         }
 
-    } catch (SQLException e) {
-        throw new RuntimeException("Error al buscar bebidas: " + e.getMessage(), e);
+        return alimentos;
     }
-
-    return alimentos;
-}
 }

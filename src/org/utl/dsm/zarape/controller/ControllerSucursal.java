@@ -176,14 +176,59 @@ public class ControllerSucursal {
     }
 
     public List<Sucursal> searchSucursales(String filtro) {
-    List<Sucursal> sucursales = new ArrayList<>();
-    String query = "CALL SP_SearchSucursales(?)";
+        List<Sucursal> sucursales = new ArrayList<>();
+        String query = "CALL SP_SearchSucursales(?)";
 
-    try (Connection conn = new ConexionMySql().open();
-         PreparedStatement ps = conn.prepareStatement(query)) {
-        ps.setString(1, filtro);
+        try ( Connection conn = new ConexionMySql().open();  PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, filtro);
 
-        try (ResultSet rs = ps.executeQuery()) {
+            try ( ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Sucursal sucursal = new Sucursal();
+                    sucursal.setIdSucursal(rs.getInt("idSucursal"));
+                    sucursal.setNombre(rs.getString("nombreSucursal"));
+                    sucursal.setLatitud(rs.getString("latitud"));
+                    sucursal.setLongitud(rs.getString("longitud"));
+                    sucursal.setFoto(rs.getString("foto"));
+                    sucursal.setUrlWeb(rs.getString("urlWeb"));
+                    sucursal.setHorarios(rs.getString("horarios"));
+                    sucursal.setCalle(rs.getString("calle"));
+                    sucursal.setNumCalle(rs.getString("numCalle"));
+                    sucursal.setColonia(rs.getString("colonia"));
+
+                    // Ciudad
+                    Ciudad ciudad = new Ciudad();
+                    ciudad.setIdCiudad(rs.getInt("idCiudad"));
+                    ciudad.setNombre(rs.getString("ciudad"));
+                    sucursal.setCiudad(ciudad);
+
+                    // Estado
+                    Estado estado = new Estado();
+                    estado.setIdEstado(rs.getInt("idEstado"));
+                    estado.setNombre(rs.getString("estado"));
+                    sucursal.setEstado(estado);
+
+                    // Estatus activo/inactivo
+                    sucursal.setActivo(rs.getInt("sucursalActivo"));
+
+                    sucursales.add(sucursal);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error al buscar sucursales: " + e.getMessage(), e);
+        }
+        return sucursales;
+    }
+    
+    public List<Sucursal> getAllSucursalesCliente() {
+        List<Sucursal> sucursales = new ArrayList<>();
+        String query = "SELECT * FROM vw_SucursalInfo WHERE sucursalActivo = 1";
+
+        ConexionMySql conexionMySql = new ConexionMySql();
+
+        try ( Connection conn = conexionMySql.open();  PreparedStatement ps = conn.prepareStatement(query);  ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 Sucursal sucursal = new Sucursal();
                 sucursal.setIdSucursal(rs.getInt("idSucursal"));
@@ -197,30 +242,35 @@ public class ControllerSucursal {
                 sucursal.setNumCalle(rs.getString("numCalle"));
                 sucursal.setColonia(rs.getString("colonia"));
 
-                // Ciudad
-                Ciudad ciudad = new Ciudad();
-                ciudad.setIdCiudad(rs.getInt("idCiudad"));
-                ciudad.setNombre(rs.getString("ciudad"));
-                sucursal.setCiudad(ciudad);
+                // Manejo de Ciudad
+                if (rs.getInt("idCiudad") > 0) {
+                    Ciudad ciudad = new Ciudad();
+                    ciudad.setIdCiudad(rs.getInt("idCiudad"));
+                    ciudad.setNombre(rs.getString("ciudad"));
+                    ciudad.setIdEstado(rs.getInt("idEstado"));
+                    sucursal.setCiudad(ciudad);
+                } else {
+                    sucursal.setCiudad(null);
+                }
 
-                // Estado
-                Estado estado = new Estado();
-                estado.setIdEstado(rs.getInt("idEstado"));
-                estado.setNombre(rs.getString("estado"));
-                sucursal.setEstado(estado);
+                // Manejo de Estado
+                if (rs.getInt("idEstado") > 0) {
+                    Estado estado = new Estado();
+                    estado.setIdEstado(rs.getInt("idEstado"));
+                    estado.setNombre(rs.getString("estado"));
+                    sucursal.setEstado(estado);
+                } else {
+                    sucursal.setEstado(null);
+                }
 
-                // Estatus activo/inactivo
                 sucursal.setActivo(rs.getInt("sucursalActivo"));
-
                 sucursales.add(sucursal);
             }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error al obtener las sucursales: " + e.getMessage(), e);
         }
-    } catch (SQLException e) {
-        e.printStackTrace();
-        throw new RuntimeException("Error al buscar sucursales: " + e.getMessage(), e);
+        return sucursales;
     }
-    return sucursales;
-}
-
-
 }

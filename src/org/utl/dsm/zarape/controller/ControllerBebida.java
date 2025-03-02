@@ -16,8 +16,7 @@ public class ControllerBebida {
     // Método para insertar una bebida
     public void insert(Bebida bebida) {
         String query = "{CALL SP_InsertProducto(?, ?, ?, ?, ?, ?)}";
-        try (Connection conn = new ConexionMySql().open();
-             CallableStatement cs = conn.prepareCall(query)) {
+        try ( Connection conn = new ConexionMySql().open();  CallableStatement cs = conn.prepareCall(query)) {
 
             // Asignar parámetros del procedimiento
             cs.setString(1, bebida.getProducto().getNombre());
@@ -41,9 +40,7 @@ public class ControllerBebida {
         String query = "SELECT * FROM vw_BebidasInfo"; // Consulta directa a la vista
         List<Bebida> bebidas = new ArrayList<>();
 
-        try (Connection conn = new ConexionMySql().open();
-             PreparedStatement ps = conn.prepareStatement(query);
-             ResultSet rs = ps.executeQuery()) {
+        try ( Connection conn = new ConexionMySql().open();  PreparedStatement ps = conn.prepareStatement(query);  ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 // Mapeo de la categoría
@@ -81,8 +78,7 @@ public class ControllerBebida {
     public void updateBebida(Producto producto) {
         String query = "{CALL SP_UpdateProducto(?, ?, ?, ?, ?, ?)}";
 
-        try (Connection conn = new ConexionMySql().open();
-             CallableStatement cs = conn.prepareCall(query)) {
+        try ( Connection conn = new ConexionMySql().open();  CallableStatement cs = conn.prepareCall(query)) {
 
             // Asignar parámetros al procedimiento almacenado
             cs.setInt(1, producto.getIdProducto());
@@ -105,8 +101,7 @@ public class ControllerBebida {
     public void deleteProducto(int idProducto) {
         String query = "{CALL SP_DeleteProducto(?)}";
 
-        try (Connection conn = new ConexionMySql().open();
-             CallableStatement cs = conn.prepareCall(query)) {
+        try ( Connection conn = new ConexionMySql().open();  CallableStatement cs = conn.prepareCall(query)) {
 
             // Asignar el parámetro al procedimiento almacenado
             cs.setInt(1, idProducto);
@@ -121,25 +116,78 @@ public class ControllerBebida {
     }
 
     // Método para buscar bebidas
-public List<Bebida> searchBebidas(String filtro) {
-    String query = "{CALL SP_SearchBebidas(?)}"; // Solo un parámetro de filtro
-    List<Bebida> bebidas = new ArrayList<>();
+    public List<Bebida> searchBebidas(String filtro) {
+        String query = "{CALL SP_SearchBebidas(?)}"; // Solo un parámetro de filtro
+        List<Bebida> bebidas = new ArrayList<>();
 
-    try (Connection conn = new ConexionMySql().open();
-         CallableStatement cs = conn.prepareCall(query)) {
+        try ( Connection conn = new ConexionMySql().open();  CallableStatement cs = conn.prepareCall(query)) {
 
-        // Establecer el filtro
-       cs.setString(1, filtro != null && !filtro.isEmpty() ? filtro : "");
+            // Establecer el filtro
+            cs.setString(1, filtro != null && !filtro.isEmpty() ? filtro : "");
 
-        // Ejecutar y procesar resultados
-        try (ResultSet rs = cs.executeQuery()) {
+            // Ejecutar y procesar resultados
+            try ( ResultSet rs = cs.executeQuery()) {
+                while (rs.next()) {
+                    // Mapeo de la categoría
+                    Categoria categoria = new Categoria(
+                            rs.getInt("idCategoria"),
+                            rs.getString("categoriaDescripcion"),
+                            rs.getString("categoriaTipo"),
+                            1 // Activo, puedes ajustar según tu lógica
+                    );
+
+                    // Mapeo del producto
+                    Producto producto = new Producto(
+                            rs.getInt("idProducto"),
+                            rs.getString("nombreProducto"),
+                            rs.getString("descripcionProducto"),
+                            rs.getString("fotoProducto"),
+                            rs.getDouble("precioProducto"),
+                            categoria,
+                            rs.getInt("productoActivo")
+                    );
+
+                    // Mapeo de la bebida
+                    Bebida bebida = new Bebida(rs.getInt("idBebida"), producto);
+                    bebidas.add(bebida);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error al buscar bebidas: " + e.getMessage(), e);
+        }
+
+        return bebidas;
+    }
+
+    // Cambiar estatus de una bebida
+    public void cambiarEstatus(int idProducto) {
+        String query = "{CALL SP_DeleteProducto(?)}";
+        try ( Connection conn = new ConexionMySql().open();  CallableStatement cs = conn.prepareCall(query)) {
+
+            cs.setInt(1, idProducto);
+            cs.execute();
+            System.out.println("Estatus del producto actualizado correctamente.");
+        } catch (SQLException e) {
+            throw new RuntimeException("Error al cambiar el estatus del producto: " + e.getMessage(), e);
+        }
+    }
+    
+    public List<Bebida> getAllBebidasCliente() {
+        String query = "SELECT * FROM vw_BebidasInfo WHERE productoActivo = 1"; // Consulta directa a la vista
+        List<Bebida> bebidas = new ArrayList<>();
+
+        try (Connection conn = new ConexionMySql().open();
+             PreparedStatement ps = conn.prepareStatement(query);
+             ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 // Mapeo de la categoría
                 Categoria categoria = new Categoria(
                         rs.getInt("idCategoria"),
                         rs.getString("categoriaDescripcion"),
                         rs.getString("categoriaTipo"),
-                        1 // Activo, puedes ajustar según tu lógica
+                        1
                 );
 
                 // Mapeo del producto
@@ -157,28 +205,11 @@ public List<Bebida> searchBebidas(String filtro) {
                 Bebida bebida = new Bebida(rs.getInt("idBebida"), producto);
                 bebidas.add(bebida);
             }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Error al obtener las bebidas: " + e.getMessage(), e);
         }
 
-    } catch (SQLException e) {
-        throw new RuntimeException("Error al buscar bebidas: " + e.getMessage(), e);
+        return bebidas;
     }
-
-    return bebidas;
-}
-    
-    // Cambiar estatus de una bebida
-public void cambiarEstatus(int idProducto) {
-    String query = "{CALL SP_DeleteProducto(?)}";
-    try (Connection conn = new ConexionMySql().open();
-         CallableStatement cs = conn.prepareCall(query)) {
-
-        cs.setInt(1, idProducto);
-        cs.execute();
-        System.out.println("Estatus del producto actualizado correctamente.");
-    } catch (SQLException e) {
-        throw new RuntimeException("Error al cambiar el estatus del producto: " + e.getMessage(), e);
-    }
-}
-
-
 }

@@ -9,22 +9,25 @@ import java.sql.*;
 public class ControllerTicket {
 
     // Método para insertar un ticket
-    public void insertTicket(Ticket ticket) {
-        String query = "{CALL sp_agregar_ticket(?)}";
+    public int insertTicket(Ticket ticket) {
+        String query = "{CALL sp_agregar_ticket(?, ?)}";
+        int ticketId = -1; // Valor por defecto en caso de error
         try ( Connection conn = new ConexionMySql().open();  CallableStatement cs = conn.prepareCall(query)) {
             cs.setInt(1, ticket.getIdSucursal());
+            cs.registerOutParameter(2, java.sql.Types.INTEGER); // Registrar el parámetro de salida
             cs.execute();
+            ticketId = cs.getInt(2); // Obtener el ID del ticket insertado
         } catch (SQLException e) {
             throw new RuntimeException("Error al insertar el ticket: " + e.getMessage(), e);
         }
+        return ticketId; // Retornar el ID del ticket insertado
     }
 
     // Método para cambiar el estatus de un ticket
-    public void cambiarEstatusTicket(int idTicket, int estatus) {
-        String query = "{CALL sp_cambiar_estatus_ticket(?, ?)}";
+    public void cambiarEstatusTicket(int idTicket) {
+        String query = "{CALL sp_cambiar_estatus_ticket(?)}";
         try ( Connection conn = new ConexionMySql().open();  CallableStatement cs = conn.prepareCall(query)) {
             cs.setInt(1, idTicket);
-            cs.setInt(2, estatus);
             cs.execute();
         } catch (SQLException e) {
             throw new RuntimeException("Error al cambiar el estatus del ticket: " + e.getMessage(), e);
@@ -32,11 +35,10 @@ public class ControllerTicket {
     }
 
     // Método para cambiar el estado de pago de un ticket
-    public void cambiarPagadoTicket(int idTicket, String pagado) {
-        String query = "{CALL sp_cambiar_pagado_ticket(?, ?)}";
+    public void cambiarPagadoTicket(int idTicket) {
+        String query = "{CALL sp_cambiar_pagado_ticket(?)}";
         try ( Connection conn = new ConexionMySql().open();  CallableStatement cs = conn.prepareCall(query)) {
             cs.setInt(1, idTicket);
-            cs.setString(2, pagado);
             cs.execute();
         } catch (SQLException e) {
             throw new RuntimeException("Error al cambiar el estado de pago: " + e.getMessage(), e);
